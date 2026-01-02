@@ -153,6 +153,61 @@ function Coverage() {
     { name: 'Not Covered', value: stats.notCovered }
   ] : [];
 
+  // Calculate Bloom's level coverage analysis
+  const calculateBloomLevelCoverage = () => {
+    if (!coverageData || !coverageData.results) return null;
+
+    const bloomLevels = ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'];
+    const bloomStats = {};
+
+    // Initialize stats for each Bloom's level
+    bloomLevels.forEach(level => {
+      bloomStats[level] = {
+        count: 0,
+        totalCoverage: 0,
+        covered: 0,
+        partiallyCovered: 0,
+        notCovered: 0
+      };
+    });
+
+    // Calculate statistics for each Bloom's level
+    coverageData.results.forEach(result => {
+      const level = result.bloomLevel;
+      if (bloomStats[level]) {
+        bloomStats[level].count++;
+        bloomStats[level].totalCoverage += result.coveragePercentage;
+        
+        if (result.status === 'Covered') {
+          bloomStats[level].covered++;
+        } else if (result.status === 'Partially Covered') {
+          bloomStats[level].partiallyCovered++;
+        } else {
+          bloomStats[level].notCovered++;
+        }
+      }
+    });
+
+    // Calculate average coverage for each level
+    const bloomLevelData = bloomLevels.map(level => {
+      const stats = bloomStats[level];
+      const avgCoverage = stats.count > 0 ? Math.round(stats.totalCoverage / stats.count) : 0;
+      
+      return {
+        level,
+        count: stats.count,
+        averageCoverage: avgCoverage,
+        covered: stats.covered,
+        partiallyCovered: stats.partiallyCovered,
+        notCovered: stats.notCovered
+      };
+    }).filter(item => item.count > 0); // Only show levels that have LOs
+
+    return bloomLevelData;
+  };
+
+  const bloomLevelCoverage = calculateBloomLevelCoverage();
+
   return (
     <Container className="mt-4">
       <Row className="mb-4">
@@ -291,6 +346,75 @@ function Coverage() {
         </Row>
       )}
 
+      {bloomLevelCoverage && bloomLevelCoverage.length > 0 && (
+        <Row className="mb-4">
+          <Col>
+            <Card className="academic-card">
+              <Card.Header>
+                <strong>Bloom's Level Coverage Analysis</strong>
+              </Card.Header>
+              <Card.Body>
+                <Table striped bordered hover responsive>
+                  <thead>
+                    <tr>
+                      <th>Bloom's Level</th>
+                      <th>Number of LOs</th>
+                      <th>Average Coverage %</th>
+                      <th>Covered</th>
+                      <th>Partially Covered</th>
+                      <th>Not Covered</th>
+                      <th>Coverage Visualization</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bloomLevelCoverage.map((item, index) => (
+                      <tr key={index}>
+                        <td>
+                          <Badge bg="info" style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}>
+                            {item.level}
+                          </Badge>
+                        </td>
+                        <td><strong>{item.count}</strong></td>
+                        <td>
+                          <strong>{item.averageCoverage}%</strong>
+                        </td>
+                        <td>
+                          <Badge bg="success">{item.covered}</Badge>
+                        </td>
+                        <td>
+                          <Badge bg="warning">{item.partiallyCovered}</Badge>
+                        </td>
+                        <td>
+                          <Badge bg="danger">{item.notCovered}</Badge>
+                        </td>
+                        <td>
+                          <div className="progress" style={{ height: '25px', minWidth: '150px' }}>
+                            <div
+                              className="progress-bar"
+                              role="progressbar"
+                              style={{ 
+                                width: `${item.averageCoverage}%`,
+                                backgroundColor: item.averageCoverage >= 70 ? '#28a745' : 
+                                                 item.averageCoverage >= 30 ? '#ffc107' : '#dc3545'
+                              }}
+                              aria-valuenow={item.averageCoverage}
+                              aria-valuemin="0"
+                              aria-valuemax="100"
+                            >
+                              {item.averageCoverage}%
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
+
       {loading ? (
         <div className="text-center py-4">
           <div className="spinner-border text-primary" role="status">
@@ -419,4 +543,3 @@ function Coverage() {
 }
 
 export default Coverage;
-
