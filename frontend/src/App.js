@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import Modules from './pages/Modules';
 import Questions from './pages/Questions';
 import Coverage from './pages/Coverage';
+import BloomLevelCoverage from './pages/BloomLevelCoverage';
 import QuestionGenerator from './pages/QuestionGenerator';
 import { getAuthToken, setAuthToken, removeAuthToken } from './utils/auth';
 
@@ -124,6 +125,14 @@ function App() {
             element={
               isAuthenticated ? 
                 <Coverage /> : 
+                <Navigate to="/login" />
+            } 
+          />
+          <Route 
+            path="/bloom-coverage" 
+            element={
+              isAuthenticated ? 
+                <BloomLevelCoverage /> : 
                 <Navigate to="/login" />
             } 
           />
