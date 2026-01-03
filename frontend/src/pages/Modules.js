@@ -157,18 +157,16 @@ function Modules() {
   };
 
   return (
-    <Container className="mt-4">
-      <Row className="mb-4">
-        <Col>
+    <Container className="mt-4 fade-in">
+      <div className="page-header d-flex justify-content-between align-items-center">
+        <div>
           <h1>Module Management</h1>
-          <p className="text-muted">Create and manage modules with topics and learning outcomes</p>
-        </Col>
-        <Col xs="auto">
-          <Button variant="primary" onClick={() => handleOpenModal()}>
-            + Create Module
-          </Button>
-        </Col>
-      </Row>
+          <p className="text-muted mb-0">Create and manage modules with topics and learning outcomes</p>
+        </div>
+        <Button variant="primary" onClick={() => handleOpenModal()} style={{ height: 'fit-content' }}>
+          + Create Module
+        </Button>
+      </div>
 
       {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}

@@ -234,13 +234,11 @@ function Questions() {
   const filteredQuestions = getFilteredAndSortedQuestions();
 
   return (
-    <Container className="mt-4">
-      <Row className="mb-4">
-        <Col>
-          <h1>Question Management</h1>
-          <p className="text-muted">Upload question papers or manually add questions</p>
-        </Col>
-      </Row>
+    <Container className="mt-4 fade-in">
+      <div className="page-header">
+        <h1>Question Management</h1>
+        <p className="text-muted mb-0">Upload question papers or manually add questions</p>
+      </div>
 
       {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
