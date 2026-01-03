@@ -45,12 +45,15 @@ function Login({ onLogin }) {
 
   return (
     <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-      <Card className="academic-card" style={{ width: '100%', maxWidth: '400px' }}>
-        <Card.Body>
-          <Card.Title className="text-center mb-4">
-            <h2>LOC Analyzer</h2>
-            <p className="text-muted">Sign In</p>
-          </Card.Title>
+      <Card className="academic-card fade-in" style={{ width: '100%', maxWidth: '450px' }}>
+        <Card.Body style={{ padding: '2.5rem' }}>
+          <div className="text-center mb-4">
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📚</div>
+            <h2 className="gradient-text" style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>
+              LOC Analyzer
+            </h2>
+            <p className="text-muted" style={{ fontSize: '1.1rem' }}>Sign In to continue</p>
+          </div>
 
           {error && <Alert variant="danger">{error}</Alert>}
 

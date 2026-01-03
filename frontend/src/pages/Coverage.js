@@ -142,10 +142,22 @@ function Coverage() {
     }
   };
 
-  const chartData = coverageData?.results?.map(result => ({
-    name: result.loId,
-    coverage: result.coveragePercentage
-  })) || [];
+  // Sort chart data by LO ID to ensure correct order
+  const chartData = coverageData?.results
+    ? [...coverageData.results]
+        .sort((a, b) => {
+          // Extract numbers from LO IDs for proper numerical sorting
+          const aNum = parseInt(a.loId.replace(/\D/g, '')) || 0;
+          const bNum = parseInt(b.loId.replace(/\D/g, '')) || 0;
+          if (aNum !== bNum) return aNum - bNum;
+          // If numbers are equal, sort alphabetically
+          return a.loId.localeCompare(b.loId);
+        })
+        .map(result => ({
+          name: result.loId,
+          coverage: result.coveragePercentage
+        }))
+    : [];
 
   const pieData = stats ? [
     { name: 'Covered', value: stats.covered },
@@ -153,69 +165,12 @@ function Coverage() {
     { name: 'Not Covered', value: stats.notCovered }
   ] : [];
 
-  // Calculate Bloom's level coverage analysis
-  const calculateBloomLevelCoverage = () => {
-    if (!coverageData || !coverageData.results) return null;
-
-    const bloomLevels = ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'];
-    const bloomStats = {};
-
-    // Initialize stats for each Bloom's level
-    bloomLevels.forEach(level => {
-      bloomStats[level] = {
-        count: 0,
-        totalCoverage: 0,
-        covered: 0,
-        partiallyCovered: 0,
-        notCovered: 0
-      };
-    });
-
-    // Calculate statistics for each Bloom's level
-    coverageData.results.forEach(result => {
-      const level = result.bloomLevel;
-      if (bloomStats[level]) {
-        bloomStats[level].count++;
-        bloomStats[level].totalCoverage += result.coveragePercentage;
-        
-        if (result.status === 'Covered') {
-          bloomStats[level].covered++;
-        } else if (result.status === 'Partially Covered') {
-          bloomStats[level].partiallyCovered++;
-        } else {
-          bloomStats[level].notCovered++;
-        }
-      }
-    });
-
-    // Calculate average coverage for each level
-    const bloomLevelData = bloomLevels.map(level => {
-      const stats = bloomStats[level];
-      const avgCoverage = stats.count > 0 ? Math.round(stats.totalCoverage / stats.count) : 0;
-      
-      return {
-        level,
-        count: stats.count,
-        averageCoverage: avgCoverage,
-        covered: stats.covered,
-        partiallyCovered: stats.partiallyCovered,
-        notCovered: stats.notCovered
-      };
-    }).filter(item => item.count > 0); // Only show levels that have LOs
-
-    return bloomLevelData;
-  };
-
-  const bloomLevelCoverage = calculateBloomLevelCoverage();
-
   return (
-    <Container className="mt-4">
-      <Row className="mb-4">
-        <Col>
-          <h1>Coverage Analysis</h1>
-          <p className="text-muted">Analyze learning outcome coverage for your modules</p>
-        </Col>
-      </Row>
+    <Container className="mt-4 fade-in">
+      <div className="page-header">
+        <h1>Coverage Analysis</h1>
+        <p className="text-muted mb-0">Analyze learning outcome coverage for your modules</p>
+      </div>
 
       {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
@@ -257,35 +212,55 @@ function Coverage() {
 
       {stats && (
         <Row className="mb-4">
-          <Col md={3}>
-            <Card className="academic-card text-center">
+          <Col md={3} className="mb-3">
+            <Card className="academic-card stat-card info text-center h-100">
               <Card.Body>
-                <h3>{stats.totalLOs}</h3>
-                <p className="text-muted mb-0">Total LOs</p>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📋</div>
+                <h2 style={{ fontWeight: '700', marginBottom: '0.5rem', color: '#17a2b8' }}>
+                  {stats.totalLOs}
+                </h2>
+                <p className="text-muted mb-0" style={{ fontSize: '0.95rem', fontWeight: '500' }}>
+                  Total LOs
+                </p>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
-            <Card className="academic-card text-center">
+          <Col md={3} className="mb-3">
+            <Card className="academic-card stat-card success text-center h-100">
               <Card.Body>
-                <h3 className="text-success">{stats.covered}</h3>
-                <p className="text-muted mb-0">Covered</p>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>✅</div>
+                <h2 style={{ fontWeight: '700', marginBottom: '0.5rem', color: '#28a745' }}>
+                  {stats.covered}
+                </h2>
+                <p className="text-muted mb-0" style={{ fontSize: '0.95rem', fontWeight: '500' }}>
+                  Covered
+                </p>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
-            <Card className="academic-card text-center">
+          <Col md={3} className="mb-3">
+            <Card className="academic-card stat-card warning text-center h-100">
               <Card.Body>
-                <h3 className="text-warning">{stats.partiallyCovered}</h3>
-                <p className="text-muted mb-0">Partially Covered</p>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>⚠️</div>
+                <h2 style={{ fontWeight: '700', marginBottom: '0.5rem', color: '#ffc107' }}>
+                  {stats.partiallyCovered}
+                </h2>
+                <p className="text-muted mb-0" style={{ fontSize: '0.95rem', fontWeight: '500' }}>
+                  Partially Covered
+                </p>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
-            <Card className="academic-card text-center">
+          <Col md={3} className="mb-3">
+            <Card className="academic-card stat-card danger text-center h-100">
               <Card.Body>
-                <h3 className="text-danger">{stats.notCovered}</h3>
-                <p className="text-muted mb-0">Not Covered</p>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>❌</div>
+                <h2 style={{ fontWeight: '700', marginBottom: '0.5rem', color: '#dc3545' }}>
+                  {stats.notCovered}
+                </h2>
+                <p className="text-muted mb-0" style={{ fontSize: '0.95rem', fontWeight: '500' }}>
+                  Not Covered
+                </p>
               </Card.Body>
             </Card>
           </Col>
@@ -332,7 +307,11 @@ function Coverage() {
                   <div
                     className="progress-bar"
                     role="progressbar"
-                    style={{ width: `${stats.averageCoverage}%` }}
+                    style={{ 
+                      width: `${stats.averageCoverage}%`,
+                      backgroundColor: stats.averageCoverage >= 70 ? '#28a745' : 
+                                     stats.averageCoverage >= 30 ? '#ffc107' : '#dc3545'
+                    }}
                     aria-valuenow={stats.averageCoverage}
                     aria-valuemin="0"
                     aria-valuemax="100"
@@ -340,75 +319,6 @@ function Coverage() {
                     {stats.averageCoverage}%
                   </div>
                 </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )}
-
-      {bloomLevelCoverage && bloomLevelCoverage.length > 0 && (
-        <Row className="mb-4">
-          <Col>
-            <Card className="academic-card">
-              <Card.Header>
-                <strong>Bloom's Level Coverage Analysis</strong>
-              </Card.Header>
-              <Card.Body>
-                <Table striped bordered hover responsive>
-                  <thead>
-                    <tr>
-                      <th>Bloom's Level</th>
-                      <th>Number of LOs</th>
-                      <th>Average Coverage %</th>
-                      <th>Covered</th>
-                      <th>Partially Covered</th>
-                      <th>Not Covered</th>
-                      <th>Coverage Visualization</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bloomLevelCoverage.map((item, index) => (
-                      <tr key={index}>
-                        <td>
-                          <Badge bg="info" style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}>
-                            {item.level}
-                          </Badge>
-                        </td>
-                        <td><strong>{item.count}</strong></td>
-                        <td>
-                          <strong>{item.averageCoverage}%</strong>
-                        </td>
-                        <td>
-                          <Badge bg="success">{item.covered}</Badge>
-                        </td>
-                        <td>
-                          <Badge bg="warning">{item.partiallyCovered}</Badge>
-                        </td>
-                        <td>
-                          <Badge bg="danger">{item.notCovered}</Badge>
-                        </td>
-                        <td>
-                          <div className="progress" style={{ height: '25px', minWidth: '150px' }}>
-                            <div
-                              className="progress-bar"
-                              role="progressbar"
-                              style={{ 
-                                width: `${item.averageCoverage}%`,
-                                backgroundColor: item.averageCoverage >= 70 ? '#28a745' : 
-                                                 item.averageCoverage >= 30 ? '#ffc107' : '#dc3545'
-                              }}
-                              aria-valuenow={item.averageCoverage}
-                              aria-valuemin="0"
-                              aria-valuemax="100"
-                            >
-                              {item.averageCoverage}%
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
               </Card.Body>
             </Card>
           </Col>
@@ -543,3 +453,4 @@ function Coverage() {
 }
 
 export default Coverage;
+
