@@ -5,7 +5,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Alert, Table, Badge, Form } from 'react-bootstrap';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from 'recharts';
 import { coverageAPI } from '../utils/api';
 import ModuleSelector from '../components/ModuleSelector';
 import { getPersistedModuleId, setPersistedModuleId } from '../utils/moduleStorage';
@@ -104,7 +107,7 @@ function BloomLevelCoverage() {
       if (bloomStats[level]) {
         bloomStats[level].count++;
         bloomStats[level].totalCoverage += result.coveragePercentage;
-        
+
         if (result.status === 'Covered') {
           bloomStats[level].covered++;
         } else if (result.status === 'Partially Covered') {
@@ -119,7 +122,7 @@ function BloomLevelCoverage() {
     const bloomLevelData = bloomLevels.map(level => {
       const stats = bloomStats[level];
       const avgCoverage = stats.count > 0 ? Math.round(stats.totalCoverage / stats.count) : 0;
-      
+
       return {
         level,
         count: stats.count,
@@ -135,12 +138,20 @@ function BloomLevelCoverage() {
 
   const bloomLevelCoverage = calculateBloomLevelCoverage();
 
-  // Prepare chart data
+  // Prepare bar chart data
   const chartData = bloomLevelCoverage ? bloomLevelCoverage.map(item => ({
     level: item.level,
     coverage: item.averageCoverage,
     count: item.count
   })) : [];
+
+  // Prepare pie chart data (LO count by Bloom level)
+  const pieData = bloomLevelCoverage ? bloomLevelCoverage.map(item => ({
+    name: item.level,
+    value: item.count
+  })) : [];
+
+  const PIE_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AA46BE', '#FF4560'];
 
   return (
     <Container className="mt-4 fade-in">
@@ -188,14 +199,16 @@ function BloomLevelCoverage() {
         </div>
       ) : bloomLevelCoverage && bloomLevelCoverage.length > 0 ? (
         <>
+          {/* Charts Row */}
           <Row className="mb-4">
-            <Col>
+            {/* Bar Chart */}
+            <Col md={7}>
               <Card className="academic-card">
                 <Card.Header>
                   <strong>Average Coverage by Bloom's Level</strong>
                 </Card.Header>
                 <Card.Body>
-                  <ResponsiveContainer width="100%" height={400}>
+                  <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="level" />
@@ -208,8 +221,39 @@ function BloomLevelCoverage() {
                 </Card.Body>
               </Card>
             </Col>
+
+            {/* Pie Chart */}
+            <Col md={5}>
+              <Card className="academic-card">
+                <Card.Header>
+                  <strong>Bloom Level Distribution (LO Count)</strong>
+                </Card.Header>
+                <Card.Body>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={110}
+                        label
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Card.Body>
+              </Card>
+            </Col>
           </Row>
 
+          {/* Table */}
           <Row className="mb-4">
             <Col>
               <Card className="academic-card">
@@ -258,10 +302,10 @@ function BloomLevelCoverage() {
                               <div
                                 className="progress-bar"
                                 role="progressbar"
-                                style={{ 
+                                style={{
                                   width: `${item.averageCoverage}%`,
-                                  backgroundColor: item.averageCoverage >= 70 ? '#28a745' : 
-                                                   item.averageCoverage >= 30 ? '#ffc107' : '#dc3545'
+                                  backgroundColor: item.averageCoverage >= 70 ? '#28a745' :
+                                    item.averageCoverage >= 30 ? '#ffc107' : '#dc3545'
                                 }}
                                 aria-valuenow={item.averageCoverage}
                                 aria-valuemin="0"
@@ -327,7 +371,7 @@ function BloomLevelCoverage() {
         <Card className="academic-card">
           <Card.Body className="text-center">
             <p className="text-muted mb-3">
-              No Bloom's level coverage data found. 
+              No Bloom's level coverage data found.
               <br />
               Please run a coverage analysis first from the Coverage Analysis page.
             </p>
@@ -339,4 +383,3 @@ function BloomLevelCoverage() {
 }
 
 export default BloomLevelCoverage;
-
