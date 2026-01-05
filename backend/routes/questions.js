@@ -211,7 +211,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { moduleId, questionText, questionType, options, correctAnswer, marks } = req.body;
+    const { moduleId, questionText, questionType, options, correctAnswer, marks, sampleAnswer } = req.body;
 
     // Validate required fields
     if (!moduleId || !questionText || !questionType) {
@@ -219,6 +219,31 @@ router.post('/', async (req, res) => {
         success: false,
         message: 'Module ID, question text, and question type are required'
       });
+    }
+
+    // Validate question type
+    if (!['MCQ', 'Structured'].includes(questionType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Question type must be either "MCQ" or "Structured"'
+      });
+    }
+
+    // Validate MCQ-specific fields
+    if (questionType === 'MCQ') {
+      if (!options || !Array.isArray(options) || options.length < 2) {
+        return res.status(400).json({
+          success: false,
+          message: 'MCQ questions require at least 2 options'
+        });
+      }
+      const validOptions = options.filter(opt => opt && opt.trim().length > 0);
+      if (validOptions.length < 2) {
+        return res.status(400).json({
+          success: false,
+          message: 'MCQ questions require at least 2 valid (non-empty) options'
+        });
+      }
     }
 
     // Verify module exists
@@ -233,12 +258,13 @@ router.post('/', async (req, res) => {
     // Create question
     const question = new Question({
       moduleId,
-      questionText,
+      questionText: questionText.trim(),
       questionType,
       source: 'Manual',
-      options: options || [],
-      correctAnswer: correctAnswer || '',
-      marks: marks || 0
+      options: questionType === 'MCQ' ? (options || []).filter(opt => opt && opt.trim().length > 0) : [],
+      correctAnswer: questionType === 'MCQ' ? (correctAnswer || '').trim() : '',
+      marks: marks || 0,
+      sampleAnswer: questionType === 'Structured' ? (sampleAnswer || '').trim() : ''
     });
 
     await question.save();
@@ -267,7 +293,7 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   try {
-    const { questionText, questionType, options, correctAnswer, marks } = req.body;
+    const { questionText, questionType, options, correctAnswer, marks, sampleAnswer } = req.body;
 
     const question = await Question.findById(req.params.id);
     
@@ -279,11 +305,28 @@ router.put('/:id', async (req, res) => {
     }
 
     // Update fields
-    if (questionText) question.questionText = questionText;
-    if (questionType) question.questionType = questionType;
-    if (options) question.options = options;
-    if (correctAnswer !== undefined) question.correctAnswer = correctAnswer;
+    if (questionText !== undefined) question.questionText = questionText.trim();
+    if (questionType) {
+      if (!['MCQ', 'Structured'].includes(questionType)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Question type must be either "MCQ" or "Structured"'
+        });
+      }
+      question.questionType = questionType;
+    }
+    if (options !== undefined) {
+      if (question.questionType === 'MCQ' && (!Array.isArray(options) || options.filter(opt => opt && opt.trim()).length < 2)) {
+        return res.status(400).json({
+          success: false,
+          message: 'MCQ questions require at least 2 valid options'
+        });
+      }
+      question.options = Array.isArray(options) ? options.filter(opt => opt && opt.trim().length > 0) : [];
+    }
+    if (correctAnswer !== undefined) question.correctAnswer = correctAnswer.trim();
     if (marks !== undefined) question.marks = marks;
+    if (sampleAnswer !== undefined) question.sampleAnswer = sampleAnswer.trim();
 
     await question.save();
 

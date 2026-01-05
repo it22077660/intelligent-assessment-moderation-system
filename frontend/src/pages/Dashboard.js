@@ -41,7 +41,7 @@ function Dashboard({ user }) {
   return (
     <Container className="mt-4 fade-in">
       <div className="page-header">
-        <h1 className="mb-2">Welcome back, {user?.name}! 👋</h1>
+        <h1 className="mb-2">Welcome back, {user?.name}! </h1>
         <p className="lead text-muted mb-0">
           Learning Outcome Coverage Analyzer - Manage modules, analyze coverage, and generate questions.
         </p>

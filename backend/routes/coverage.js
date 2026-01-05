@@ -362,17 +362,43 @@ router.get('/stats/:moduleId', async (req, res) => {
       ];
     }
 
-    const coverageReports = await Coverage.find(query);
+    const coverageReports = await Coverage.find(query)
+      .sort({ analyzedAt: -1 }); // Sort by most recent first
 
+    // Deduplicate by loId - keep only the most recent report for each LO
+    // This ensures we don't count the same LO multiple times if there are duplicate reports
+    const uniqueReports = new Map();
+    for (const report of coverageReports) {
+      if (!uniqueReports.has(report.loId)) {
+        uniqueReports.set(report.loId, report);
+      }
+    }
+    const deduplicatedReports = Array.from(uniqueReports.values());
+
+    // Calculate stats from deduplicated reports
+    // totalLOs is always the number of learning outcomes in the module
+    // The status counts are based on unique reports (one per LO)
     const stats = {
       totalLOs: module.learningOutcomes.length,
-      covered: coverageReports.filter(r => r.status === 'Covered').length,
-      partiallyCovered: coverageReports.filter(r => r.status === 'Partially Covered').length,
-      notCovered: coverageReports.filter(r => r.status === 'Not Covered').length,
-      averageCoverage: coverageReports.length > 0
-        ? Math.round(coverageReports.reduce((sum, r) => sum + r.coveragePercentage, 0) / coverageReports.length)
+      covered: deduplicatedReports.filter(r => r.status === 'Covered').length,
+      partiallyCovered: deduplicatedReports.filter(r => r.status === 'Partially Covered').length,
+      notCovered: deduplicatedReports.filter(r => r.status === 'Not Covered').length,
+      averageCoverage: deduplicatedReports.length > 0
+        ? Math.round(deduplicatedReports.reduce((sum, r) => sum + r.coveragePercentage, 0) / deduplicatedReports.length)
         : 0
     };
+
+    // Safety check: ensure counts don't exceed totalLOs
+    // This should never happen after deduplication, but adding as a safeguard
+    const totalCounted = stats.covered + stats.partiallyCovered + stats.notCovered;
+    if (totalCounted > stats.totalLOs) {
+      console.warn(`Warning: Coverage counts (${totalCounted}) exceed total LOs (${stats.totalLOs}) for module ${moduleId}. This may indicate data inconsistency.`);
+      // Cap the counts to totalLOs by proportionally reducing them
+      const scaleFactor = stats.totalLOs / totalCounted;
+      stats.covered = Math.round(stats.covered * scaleFactor);
+      stats.partiallyCovered = Math.round(stats.partiallyCovered * scaleFactor);
+      stats.notCovered = stats.totalLOs - stats.covered - stats.partiallyCovered;
+    }
 
     res.json({
       success: true,

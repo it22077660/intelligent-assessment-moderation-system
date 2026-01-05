@@ -25,7 +25,8 @@ function Questions() {
     questionType: 'Structured',
     options: ['', '', '', ''],
     correctAnswer: '',
-    marks: 10
+    marks: 10,
+    sampleAnswer: ''
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -70,7 +71,24 @@ function Questions() {
   };
 
   const handleFileChange = (e) => {
-    setUploadFile(e.target.files[0]);
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file size (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('File size exceeds 10MB limit');
+        e.target.value = ''; // Reset file input
+        return;
+      }
+      // Validate file type
+      const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'text/plain'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('Invalid file type. Only PDF, DOCX, and TXT files are allowed.');
+        e.target.value = ''; // Reset file input
+        return;
+      }
+      setUploadFile(file);
+      setError(''); // Clear any previous errors
+    }
   };
 
   const handleUpload = async (e) => {
@@ -90,12 +108,21 @@ function Questions() {
 
     try {
       const response = await questionAPI.upload(selectedModuleId, uploadFile);
-      setSuccess(`Successfully extracted ${response.data.count} questions from file`);
-      setUploadFile(null);
-      setShowUploadModal(false);
-      loadQuestions();
+      if (response.data && response.data.success) {
+        setSuccess(`Successfully extracted ${response.data.count || 0} questions from file`);
+        setUploadFile(null);
+        // Reset file input
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) fileInput.value = '';
+        setShowUploadModal(false);
+        loadQuestions();
+      } else {
+        setError(response.data?.message || 'Upload failed');
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Upload failed');
+      const errorMessage = err.response?.data?.message || err.message || 'Upload failed. Please check the file format and try again.';
+      setError(errorMessage);
+      console.error('Upload error:', err);
     } finally {
       setUploading(false);
     }
@@ -108,35 +135,61 @@ function Questions() {
       return;
     }
 
+    // Validate question text
+    if (!formData.questionText || !formData.questionText.trim()) {
+      setError('Question text is required');
+      return;
+    }
+
+    // Validate MCQ fields
+    if (formData.questionType === 'MCQ') {
+      const validOptions = formData.options.filter(opt => opt && opt.trim().length > 0);
+      if (validOptions.length < 2) {
+        setError('MCQ questions require at least 2 options');
+        return;
+      }
+    }
+
     setError('');
     setSuccess('');
 
     try {
       const questionData = {
         moduleId: selectedModuleId,
-        questionText: formData.questionText,
+        questionText: formData.questionText.trim(),
         questionType: formData.questionType,
-        marks: formData.marks
+        marks: formData.marks || 0
       };
 
       if (formData.questionType === 'MCQ') {
-        questionData.options = formData.options.filter(opt => opt.trim());
-        questionData.correctAnswer = formData.correctAnswer;
+        questionData.options = formData.options.filter(opt => opt && opt.trim());
+        questionData.correctAnswer = formData.correctAnswer.trim() || '';
       }
 
-      await questionAPI.create(questionData);
-      setSuccess('Question created successfully');
-      setFormData({
-        questionText: '',
-        questionType: 'Structured',
-        options: ['', '', '', ''],
-        correctAnswer: '',
-        marks: 10
-      });
-      setShowManualModal(false);
-      loadQuestions();
+      if (formData.questionType === 'Structured' && formData.sampleAnswer) {
+        questionData.sampleAnswer = formData.sampleAnswer.trim();
+      }
+
+      const response = await questionAPI.create(questionData);
+      if (response.data && response.data.success) {
+        setSuccess('Question created successfully');
+        setFormData({
+          questionText: '',
+          questionType: 'Structured',
+          options: ['', '', '', ''],
+          correctAnswer: '',
+          marks: 10,
+          sampleAnswer: ''
+        });
+        setShowManualModal(false);
+        loadQuestions();
+      } else {
+        setError(response.data?.message || 'Failed to create question');
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create question');
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create question. Please check all fields and try again.';
+      setError(errorMessage);
+      console.error('Create question error:', err);
     }
   };
 
@@ -408,12 +461,22 @@ function Questions() {
       )}
 
       {/* Upload Modal */}
-      <Modal show={showUploadModal} onHide={() => setShowUploadModal(false)}>
+      <Modal show={showUploadModal} onHide={() => {
+        setShowUploadModal(false);
+        setUploadFile(null);
+        setError('');
+        // Reset file input
+        setTimeout(() => {
+          const fileInput = document.querySelector('input[type="file"]');
+          if (fileInput) fileInput.value = '';
+        }, 100);
+      }}>
         <Modal.Header closeButton>
           <Modal.Title>Upload Question Paper</Modal.Title>
         </Modal.Header>
         <Form onSubmit={handleUpload}>
           <Modal.Body>
+            {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
             <Form.Group className="mb-3">
               <Form.Label>Select File (PDF, DOCX, or TXT)</Form.Label>
               <Form.Control
@@ -425,11 +488,20 @@ function Questions() {
               <Form.Text className="text-muted">
                 Supported formats: PDF, DOCX, TXT (Max 10MB)
               </Form.Text>
+              {uploadFile && (
+                <div className="mt-2">
+                  <Badge bg="info">Selected: {uploadFile.name} ({(uploadFile.size / 1024).toFixed(2)} KB)</Badge>
+                </div>
+              )}
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowUploadModal(false)}>Cancel</Button>
-            <Button variant="primary" type="submit" disabled={uploading}>
+            <Button variant="secondary" onClick={() => {
+              setShowUploadModal(false);
+              setUploadFile(null);
+              setError('');
+            }}>Cancel</Button>
+            <Button variant="primary" type="submit" disabled={uploading || !uploadFile}>
               {uploading ? 'Uploading...' : 'Upload'}
             </Button>
           </Modal.Footer>
@@ -437,7 +509,18 @@ function Questions() {
       </Modal>
 
       {/* Manual Entry Modal */}
-      <Modal show={showManualModal} onHide={() => setShowManualModal(false)} size="lg">
+      <Modal show={showManualModal} onHide={() => {
+        setShowManualModal(false);
+        setError('');
+        setFormData({
+          questionText: '',
+          questionType: 'Structured',
+          options: ['', '', '', ''],
+          correctAnswer: '',
+          marks: 10,
+          sampleAnswer: ''
+        });
+      }} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Add Manual Question</Modal.Title>
         </Modal.Header>
@@ -497,6 +580,22 @@ function Questions() {
                   />
                 </Form.Group>
               </>
+            )}
+
+            {formData.questionType === 'Structured' && (
+              <Form.Group className="mb-3">
+                <Form.Label>Sample Answer / Model Answer (Optional)</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={6}
+                  value={formData.sampleAnswer}
+                  onChange={(e) => setFormData({ ...formData, sampleAnswer: e.target.value })}
+                  placeholder="Enter the sample/model answer for this essay question..."
+                />
+                <Form.Text className="text-muted">
+                  Provide a model answer or sample answer that demonstrates the expected response.
+                </Form.Text>
+              </Form.Group>
             )}
 
             <Form.Group className="mb-3">

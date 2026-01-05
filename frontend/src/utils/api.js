@@ -23,6 +23,10 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Don't override Content-Type for FormData uploads
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
     return config;
   },
   (error) => {
@@ -63,11 +67,8 @@ export const questionAPI = {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('moduleId', moduleId);
-    return api.post('/questions/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
+    // Axios will automatically set Content-Type with boundary for FormData
+    return api.post('/questions/upload', formData);
   }
 };
 
