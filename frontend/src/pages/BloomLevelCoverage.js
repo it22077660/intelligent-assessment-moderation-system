@@ -152,6 +152,8 @@ function BloomLevelCoverage() {
   })) : [];
 
   const PIE_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AA46BE', '#FF4560'];
+  const renderPercentLabel = ({ percent }) => `${(percent * 100).toFixed(0)}%`;
+
 
   return (
     <Container className="mt-4 fade-in">
@@ -238,7 +240,8 @@ function BloomLevelCoverage() {
                         cx="50%"
                         cy="50%"
                         outerRadius={110}
-                        label
+                        labelLine={false}
+                        label={renderPercentLabel}
                       >
                         {pieData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
