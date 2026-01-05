@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { moduleAPI, coverageAPI } from '../utils/api';
+import { moduleAPI } from '../utils/api';
 
 function Dashboard({ user }) {
   const [stats, setStats] = useState({
@@ -25,7 +25,7 @@ function Dashboard({ user }) {
       setLoading(true);
       const modulesResponse = await moduleAPI.getAll();
       const modules = modulesResponse.data.modules || [];
-      
+
       setStats({
         totalModules: modules.length,
         totalQuestions: 0, // Would need to fetch all questions
@@ -47,6 +47,7 @@ function Dashboard({ user }) {
         </p>
       </div>
 
+      {/* Top row */}
       <Row className="mt-4">
         <Col md={4} className="mb-4">
           <Card className="academic-card h-100" style={{ borderLeft: '4px solid #667eea' }}>
@@ -60,9 +61,9 @@ function Dashboard({ user }) {
                   {loading ? 'Loading...' : `${stats.totalModules} modules created`}
                 </Card.Text>
               </div>
-              <Button 
-                as={Link} 
-                to="/modules" 
+              <Button
+                as={Link}
+                to="/modules"
                 variant="primary"
                 className="mt-auto"
                 style={{ width: '100%' }}
@@ -85,9 +86,9 @@ function Dashboard({ user }) {
                   Upload or manually add questions to your modules
                 </Card.Text>
               </div>
-              <Button 
-                as={Link} 
-                to="/questions" 
+              <Button
+                as={Link}
+                to="/questions"
                 variant="primary"
                 className="mt-auto"
                 style={{ width: '100%' }}
@@ -110,9 +111,9 @@ function Dashboard({ user }) {
                   Analyze learning outcome coverage for your modules
                 </Card.Text>
               </div>
-              <Button 
-                as={Link} 
-                to="/coverage" 
+              <Button
+                as={Link}
+                to="/coverage"
                 variant="primary"
                 className="mt-auto"
                 style={{ width: '100%' }}
@@ -124,8 +125,34 @@ function Dashboard({ user }) {
         </Col>
       </Row>
 
+      {/* Second row */}
       <Row className="mt-4">
-        <Col md={6} className="mb-4">
+        <Col md={4} className="mb-4">
+          <Card className="academic-card h-100" style={{ borderLeft: '4px solid #6f42c1' }}>
+            <Card.Body className="d-flex flex-column">
+              <div className="mb-3">
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🧠</div>
+                <Card.Title style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>
+                  Bloom Level Coverage
+                </Card.Title>
+                <Card.Text style={{ fontSize: '1.1rem', color: '#6c757d' }}>
+                  View learning outcome coverage grouped by Bloom’s taxonomy levels
+                </Card.Text>
+              </div>
+              <Button
+                as={Link}
+                to="/bloom-level-coverage"
+                variant="primary"
+                className="mt-auto"
+                style={{ width: '100%' }}
+              >
+                View Bloom Coverage →
+              </Button>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col md={4} className="mb-4">
           <Card className="academic-card h-100" style={{ borderLeft: '4px solid #ffc107' }}>
             <Card.Body className="d-flex flex-column">
               <div className="mb-3">
@@ -137,9 +164,9 @@ function Dashboard({ user }) {
                   Generate questions automatically based on learning outcomes and Bloom's taxonomy
                 </Card.Text>
               </div>
-              <Button 
-                as={Link} 
-                to="/generator" 
+              <Button
+                as={Link}
+                to="/generator"
                 variant="success"
                 className="mt-auto"
                 style={{ width: '100%' }}
@@ -150,7 +177,7 @@ function Dashboard({ user }) {
           </Card>
         </Col>
 
-        <Col md={6} className="mb-4">
+        <Col md={4} className="mb-4">
           <Card className="academic-card h-100" style={{ borderLeft: '4px solid #764ba2' }}>
             <Card.Body>
               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>ℹ️</div>
@@ -162,6 +189,7 @@ function Dashboard({ user }) {
                   <li style={{ marginBottom: '0.5rem' }}>Create a module with learning outcomes</li>
                   <li style={{ marginBottom: '0.5rem' }}>Add questions (upload or manual)</li>
                   <li style={{ marginBottom: '0.5rem' }}>Run coverage analysis</li>
+                  <li style={{ marginBottom: '0.5rem' }}>Check Bloom level coverage</li>
                   <li>Generate questions for uncovered LOs</li>
                 </ol>
               </Card.Text>
@@ -174,4 +202,3 @@ function Dashboard({ user }) {
 }
 
 export default Dashboard;
-
