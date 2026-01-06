@@ -108,13 +108,22 @@ function Modules() {
   };
 
   const handleAddLO = () => {
-    if (currentLO.loId.trim() && currentLO.description.trim()) {
-      setFormData({
-        ...formData,
-        learningOutcomes: [...formData.learningOutcomes, { ...currentLO }]
-      });
-      setCurrentLO({ loId: '', description: '', bloomLevel: 'Remember' });
+    setError('');
+    // validation
+    if (!currentLO.loId.trim() || !currentLO.description.trim()) {
+      setError('LO ID and Description are required');
+      return;
     }
+    // prevent duplicate LO IDs
+    if (formData.learningOutcomes?.some(lo => lo.loId === currentLO.loId.trim())) {
+      setError(`LO with ID "${currentLO.loId}" already exists`);
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      learningOutcomes: [...(prev.learningOutcomes || []), { ...currentLO, loId: currentLO.loId.trim(), description: currentLO.description.trim() }]
+    }));
+    setCurrentLO({ loId: '', description: '', bloomLevel: 'Remember' });
   };
 
   const handleRemoveLO = (index) => {
@@ -324,7 +333,7 @@ function Modules() {
                       <Form.Control
                         type="text"
                         value={currentLO.loId}
-                        onChange={(e) => setCurrentLO({ ...currentLO, loId: e.target.value })}
+                        onChange={(e) => { setError(''); setCurrentLO(prev => ({ ...prev, loId: e.target.value })); }}
                         placeholder="e.g., LO1"
                       />
                     </Form.Group>
@@ -334,7 +343,7 @@ function Modules() {
                       <Form.Label>Bloom's Level</Form.Label>
                       <Form.Select
                         value={currentLO.bloomLevel}
-                        onChange={(e) => setCurrentLO({ ...currentLO, bloomLevel: e.target.value })}
+                        onChange={(e) => { setError(''); setCurrentLO(prev => ({ ...prev, bloomLevel: e.target.value })); }}
                       >
                         {bloomLevels.map(level => (
                           <option key={level} value={level}>{level}</option>
@@ -348,13 +357,20 @@ function Modules() {
                       <Form.Control
                         type="text"
                         value={currentLO.description}
-                        onChange={(e) => setCurrentLO({ ...currentLO, description: e.target.value })}
+                        onChange={(e) => { setError(''); setCurrentLO(prev => ({ ...prev, description: e.target.value })); }}
                         placeholder="Learning outcome description"
                       />
                     </Form.Group>
                   </Col>
                 </Row>
-                <Button type="button" onClick={handleAddLO} className="mb-3">Add Learning Outcome</Button>
+                <Button
+                  type="button"
+                  onClick={handleAddLO}
+                  className="mb-3"
+                  disabled={!currentLO.loId.trim() || !currentLO.description.trim()}
+                >
+                  Add Learning Outcome
+                </Button>
 
                 {formData.learningOutcomes.map((lo, index) => (
                   <div key={index} className="mb-2 p-2 border rounded">
