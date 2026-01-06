@@ -32,7 +32,7 @@ intelligent-assessment-moderation-system/
 
 ## System Architecture
 
-![System Architecture]()
+![System Architecture](https://github.com/it22077660/intelligent-assessment-moderation-system/blob/ad4362bbe847f9098d3aacd459c0eabdfd99060d/System%20architecture.png)
 
 
 ## Getting Started
@@ -47,35 +47,49 @@ intelligent-assessment-moderation-system/
 Create `backend/.env`:
 
 env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/loc_analyzer
-JWT_SECRET=your_secret_key
-GROQ_API_KEY=your_groq_api_key
+
+  PORT=5000
+  MONGODB_URI=mongodb://localhost:27017/loc_analyzer
+  JWT_SECRET=your_secret_key
+  GROQ_API_KEY=your_groq_api_key
 
 Run Backend
 bash
 
 
 cd backend
+
   npm install
   npm run dev
 
-Backend runs at:
+ Backend runs at:
+
   http://localhost:5000
 
-Run Frontend (Optional)
+ Run Frontend (Optional)
+ 
   cd frontend
+  
   npm install
+  
   npm start
+  
   Frontend runs at:
+  
   http://localhost:3000
 
-Development Workflow
+# Development Workflow
+
   main – stable
+  
   dev – development
+  
   feature/<name> – new features
 
-git checkout dev
+# git checkout dev
+
   git checkout -b feature/new-feature
+  
   git commit -m "Add new feature"
+  
   git push
